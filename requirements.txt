@@ -1,1 +1,6 @@
 Pygame
+matplotlib 
+torch
+torchvision
+torchaudio
+ipython
