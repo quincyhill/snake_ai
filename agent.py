@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from collections import deque
 
 from snake_game import SnakeGameAI, Direction, Point, BLOCK_SIZE
+from model import Linear_QNet, QTrainer
+from helper import plot
 
 
 MAX_MEMORY_SIZE = 100_000
@@ -21,17 +23,17 @@ class Agent:
         # control the randomness
         self.epsilon = 0
         
-        # discount rate
-        self.gamma = 0
+        # discount rate, can mess around but keep it < 1
+        self.gamma = 0.9
         
         # popleft when memory is full
         self.memory = deque(maxlen=MAX_MEMORY_SIZE)
         
         # TODO: model 
-        self.model = None
+        self.model = Linear_QNet(11, 256, 3)
 
         # TODO: trainer
-        self.trainer = None
+        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
     
     def get_state(self, game: SnakeGameAI):
         head = game.snake[0]
@@ -97,9 +99,9 @@ class Agent:
         else:
             mini_sample = self.memory
             
-        states, actions, rewards, next_states, games_over = zip(*mini_sample)
+        states, actions, rewards, next_states, game_overs = zip(*mini_sample)
 
-        self.trainer.train_step(states, actions, rewards, next_states, games_over)
+        self.trainer.train_step(states, actions, rewards, next_states, game_overs)
         
 
     def train_short_memory(self, state, action, reward, next_state, game_over):
@@ -123,7 +125,7 @@ class Agent:
             # Convert state to tensor
             state0 = torch.tensor(state, dtype=torch.float32)
 
-            prediction = self.model.predict(state0)
+            prediction = self.model(state0)
             
             # Convert to only one number
             move = torch.argmax(prediction).item()
@@ -174,11 +176,15 @@ def train():
             
             if score > best_score:
                 best_score = score
-                # TODO: agent.model.save()
+                agent.model.save()
                 
             print('Game: ', agent.n_games, 'Score: ', score, 'Best: ', best_score)
             
-            # plotting
+            plot_scores.append(score)
+            total_score += score
+            mean_score  = total_score / agent.n_games
+            plot_mean_scores.append(mean_score)
+            plot(plot_scores, plot_mean_scores)
 
 
 if __name__ == '__main__':
