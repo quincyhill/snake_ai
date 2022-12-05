@@ -1,12 +1,11 @@
 import torch
 import random
 import numpy as np
-import matplotlib.pyplot as plt
 
 # data structure to store memory
 from collections import deque
 
-from snake_game import SnakeGameAI, Direction, Point, BLOCK_SIZE
+from snake_game import SnakeGame, Direction, Point, BLOCK_SIZE
 from model import Linear_QNet, QTrainer
 from helper import plot
 
@@ -34,9 +33,19 @@ class Agent:
 
         # TODO: trainer
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+
+        # Load the model
+        self.model.load()
+
+        # lets see
+        self.model.eval()
     
-    def get_state(self, game: SnakeGameAI):
+    def get_state(self, game: SnakeGame):
+        """All the possible states that the agent can be in"""
+
         head = game.snake[0]
+
+        # points above, lower, left and right to the head
         point_l = Point(head.x - BLOCK_SIZE, head.y)
         point_r = Point(head.x + BLOCK_SIZE, head.y)
         point_u = Point(head.x, head.y - BLOCK_SIZE)
@@ -47,6 +56,7 @@ class Agent:
         dir_u = game.direction == Direction.UP
         dir_d = game.direction == Direction.DOWN
         
+        # Add an addional state thats danger if snake is about to hit itself
         state = [
             # Danger straight
             (dir_r and game.is_collision(point_r)) or
@@ -89,10 +99,12 @@ class Agent:
 
     
     def remember(self, state, action, reward, next_state, game_over):
+        """Store the memory"""
         # Again if exceeds the max size, pop left aka the oldest one
         self.memory.append((state, action, reward, next_state, game_over))
     
     def train_long_memory(self):
+        """Train the model on the long memory"""
         if len(self.memory) > BATCH_SIZE:
             # return a list of tuples 
             mini_sample = random.sample(self.memory, BATCH_SIZE)
@@ -105,17 +117,18 @@ class Agent:
         
 
     def train_short_memory(self, state, action, reward, next_state, game_over):
+        """Train the model on the short memory"""
         # Train for one game step
         self.trainer.train_step(state, action, reward, next_state, game_over)
 
     def get_action(self, state):
+        """Get the action from the model"""
         # random moves: tradeoff between exploration and exploitation
         
         # Can change this to whatever
+
         # The more games we have the smaller the epsilon will get and the less likely the agent will explore
         self.epsilon = 80 - self.n_games
-        
-    
         
         final_move = [0, 0, 0]
         if random.randint(0, 200) < self.epsilon:
@@ -135,6 +148,7 @@ class Agent:
         return final_move
 
 def train():
+    """Train the model"""
     # used for plotting
     plot_scores = []
     
@@ -146,7 +160,7 @@ def train():
     
     agent = Agent()
     
-    game = SnakeGameAI()
+    game = SnakeGame()
 
     # train till I quit
     while True:
@@ -160,6 +174,7 @@ def train():
         # perform move and get new state
         reward, game_over, score = game.play_step(final_move)
         
+        # get new state
         state_new = agent.get_state(game)
         
         # train short memeory

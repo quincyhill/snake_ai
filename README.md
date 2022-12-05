@@ -35,7 +35,7 @@ Reward
 - game over: -10
 - else: 0
 
-Action
+Action (3 values)
 
 [1, 0, 0] -> straight
 [0, 1, 0] -> right turn
