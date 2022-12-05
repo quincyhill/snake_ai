@@ -41,6 +41,6 @@ Action (3 values)
 [0, 1, 0] -> right turn
 [0, 0, 1] -> left turn
 
-State (11 values)
+State (14 values)
 
-[danger straight, danger right, danger left, direction left, direction right, direction up, direction down, food left, food right, food up, food down]
+[danger wall straight, danger wall right, danger wall left, danger snake straight, danger snake right, danger snake left, direction left, direction right, direction up, direction down, food left, food right, food up, food down]

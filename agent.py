@@ -12,6 +12,7 @@ from helper import plot
 
 MAX_MEMORY_SIZE = 100_000
 BATCH_SIZE = 1000
+# order of mag learning rate
 LR = 0.001
 
 
@@ -28,17 +29,16 @@ class Agent:
         # popleft when memory is full
         self.memory = deque(maxlen=MAX_MEMORY_SIZE)
         
-        # TODO: model 
-        self.model = Linear_QNet(11, 256, 3)
+        # TODO: the size is the number of states
+        self.model = Linear_QNet(14, 256, 3)
 
         # TODO: trainer
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
-        # Load the model
-        self.model.load()
-
-        # lets see
-        self.model.eval()
+        # load the model
+        if False:
+            # Load the model
+            self.model.load()
     
     def get_state(self, game: SnakeGame):
         """All the possible states that the agent can be in"""
@@ -56,26 +56,44 @@ class Agent:
         dir_u = game.direction == Direction.UP
         dir_d = game.direction == Direction.DOWN
         
-        # Add an addional state thats danger if snake is about to hit itself
+        # Lets see if knowing that theres danger prevents the snake from hitting itself
         state = [
-            # Danger straight
+            # Danger wall straight
             (dir_r and game.is_collision(point_r)) or
             (dir_l and game.is_collision(point_l)) or
             (dir_u and game.is_collision(point_u)) or
             (dir_d and game.is_collision(point_d)),
             
-            # Danger right
+            # Danger wall right
             (dir_u and game.is_collision(point_r)) or
             (dir_d and game.is_collision(point_l)) or
             (dir_l and game.is_collision(point_u)) or
             (dir_r and game.is_collision(point_d)),
             
-            # Danger left
+            # Danger wall left
             (dir_d and game.is_collision(point_r)) or
             (dir_u and game.is_collision(point_l)) or
             (dir_r and game.is_collision(point_u)) or
             (dir_l and game.is_collision(point_d)),
-            
+
+            # Danger snake straight, maybe think better about this
+            (dir_r and point_r in game.snake[1:]) or
+            (dir_l and point_l in game.snake[1:]) or
+            (dir_u and point_u in game.snake[1:]) or
+            (dir_d and point_d in game.snake[1:]),
+
+            # Danger snake right
+            (dir_u and point_r in game.snake[1:]) or
+            (dir_d and point_l in game.snake[1:]) or
+            (dir_l and point_u in game.snake[1:]) or
+            (dir_r and point_d in game.snake[1:]),
+
+            # Danger snake left
+            (dir_d and point_r in game.snake[1:]) or
+            (dir_u and point_l in game.snake[1:]) or
+            (dir_r and point_u in game.snake[1:]) or
+            (dir_l and point_d in game.snake[1:]),
+
             # Move direction
             dir_l,
             dir_r,
@@ -94,7 +112,7 @@ class Agent:
             # Food down
             game.food.y > game.head.y,
         ]
-        
+
         return np.array(state, dtype=int)
 
     
@@ -158,6 +176,7 @@ def train():
     
     best_score = 0
     
+    # single instance of the agent
     agent = Agent()
     
     game = SnakeGame()
